@@ -16,8 +16,10 @@ def plot_umap(umap_features, ground_truth, patch_h, patch_w, width_pad, height_p
     row_padding = (height_pad-height)//14
     col_padding = (width_pad-width)//14
     umap_features = umap_features.reshape(patch_h,patch_w, 3)
-    umap_features = umap_features[:-row_padding, :-col_padding, :]
-    # axs[0].imshow(umap_features.reshape(patch_h, patch_w, 3))
+    if row_padding != 0:
+        umap_features = umap_features[:-row_padding, :, :]
+    if col_padding != 0:
+        umap_features = umap_features[:, :-col_padding, :]
     axs[0].imshow(umap_features)
     axs[0].set_title('UMAP Processed')
 

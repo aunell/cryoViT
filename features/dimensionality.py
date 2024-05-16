@@ -7,6 +7,7 @@ def find_pca(total_features,  n_components=128):
   # total_features = total_features.reshape(patch_h * patch_w, feat_dim).cpu()
   pca.fit(total_features.cpu())
   pca_features = pca.transform(total_features.cpu())
+  # pca_features =(pca_features - pca_features.min(0)) / (pca_features.max(0) - pca_features.min(0))
   assert(pca_features.shape == (total_features.shape[0], n_components))
   return pca_features #(1024, 128)
 

@@ -8,8 +8,8 @@ def get_cropped(image, crop_size=896):
     """crops image into crop_size by crop_size dimensions
     crop size must be divisible by patch size (14 for dinov2)"""
     width, height = image.size
-    padding_size_right = crop_size - (width % crop_size)
-    padding_size_bottom = crop_size - (height % crop_size)
+    padding_size_right = crop_size - (width % crop_size) if width % crop_size != 0 else 0
+    padding_size_bottom = crop_size - (height % crop_size) if height % crop_size != 0 else 0
     image = ImageOps.expand(image, border=(0, 0, padding_size_right, padding_size_bottom), fill='black')
     width_pad, height_pad = image.size
     rows = height_pad // crop_size

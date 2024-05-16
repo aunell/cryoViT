@@ -15,9 +15,9 @@ def main():
     parser = argparse.ArgumentParser(description="Process some integers.")
 
     # Add the arguments
-    parser.add_argument('--output_dir', type=str, required=True, help='The output directory')
-    parser.add_argument('--image', type=str, required=True, help='The image file path')
-    parser.add_argument('--crop_size', type=int, default=448, help='The crop size') #3 choices [224, 448, 896]
+    parser.add_argument('--output_dir', type=str, default="/pasteur/u/aunell/cryoViT/features/", help='The output directory')
+    parser.add_argument('--image', type=str, default="/pasteur/u/aunell/cryoViT/data/sample_data/original/image_test_L25_001_16.png", help='The image file path')
+    parser.add_argument('--crop_size', type=int, default=448, help='The crop size') #3 choices [224, 448, 896, 3010]
     parser.add_argument('--dimensionality', type=str, default='Both', help='PCA, UMAP, or Both') #3 choices [PCA, UMAP, Both]
     parser.add_argument('--backbone', type=str, default='dinov2_vitg14_reg', help='The backbone model') #4 choices [dinov2_vitg14_reg, dinov2_vitl14_reg, dinov2_vitb14_reg, dinov2_vits14_reg]
     parser.add_argument('--include_hsv', type=bool, default=True, help='Include HSV in the plot') #2 choices [True, False]
@@ -30,7 +30,6 @@ def main():
     dinov2, feat_dim, patch_h, patch_w = load_model(backbone=args.backbone, crop_size=args.crop_size)
     total_features = return_features(patches, dinov2) 
     #torch.Size([12, 4096, 1536])
-    # total_features= total_features.reshape(total_features.shape[0]*total_features.shape[1], feat_dim) #torch.Size([6144, 256])
     total_features = total_features.reshape(rows*cols, patch_h, patch_w, feat_dim).cpu()
     all_rows=[]
     for j in range(0,len(patches), cols):
@@ -49,7 +48,7 @@ def main():
             total_features_j = find_pca(total_features_j, n_components=128)
     total_features_j = find_umap(total_features_j, n_components=3)
     assert(total_features_j.shape == (patch_h * patch_w*cols*rows, 3))
-    plot_umap(total_features_j, img, patch_h*rows, patch_w*cols, width_pad, height_pad, width, height, output_dir=f"{args.output_dir}/UMAP_example_448_{j}.png", include_hsv=args.include_hsv)
+    plot_umap(total_features_j, img, patch_h*rows, patch_w*cols, width_pad, height_pad, width, height, output_dir=f"{args.output_dir}/UMAP_example_3010_nohsv_{j}.png", include_hsv=args.include_hsv)
 
 if __name__ == "__main__":
     main()
