@@ -56,3 +56,34 @@ def return_features(patches, model):
   total_features = torch.cat(total_features, dim=0) #expected torch.Size([1, 21904, 1536])
   assert(total_features.size()[0] == len(patches))
   return total_features 
+
+def return_features_overlapped(patches, model, cols, rows):
+    """
+    Returns features from an image using a ViT."""
+    total_features  = []
+    transform = transforms.Compose([              
+                                    transforms.ToTensor(),                    
+                                    transforms.Normalize(                      
+                                    mean=[0.485, 0.456, 0.406],                
+                                    std=[0.229, 0.224, 0.225]              
+                                    )])
+    for j in range(rows):
+        for i in range(cols):
+            with torch.no_grad():
+                if i!=0:
+                    img_l = patches[j*i-1]
+                if i!=cols-1:
+                    img_r = patches[j*i+1]
+                if j!=0:
+                    img_u = patches[i*j-1]
+                if j!=rows-1:
+                    img_d = patches[i*j+1]
+                
+                img= patches[i]
+                img_t = transform(img).cuda()
+                features_dict = model.forward_features(img_t.unsqueeze(0))
+                features = features_dict['x_norm_patchtokens']
+                total_features.append(features)
+        total_features = torch.cat(total_features, dim=0) #expected torch.Size([1, 21904, 1536])
+        assert(total_features.size()[0] == len(patches))
+    return total_features
