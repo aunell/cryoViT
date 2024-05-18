@@ -1,15 +1,22 @@
 import colorsys
 import matplotlib.pyplot as plt
-
+import numpy as np
+import torch
+def set_seed(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(seed)
 def plot_umap(umap_features, ground_truth, patch_h, patch_w, width_pad, height_pad,
-              width, height, output_dir=None, include_hsv=True):
+              width, height, output_dir=None, include_hsv="True"):
     # Convert RGB to HSV, adjust saturation and value, then convert back to RGB
-    if include_hsv:
+    set_seed(0)
+    if include_hsv=="True":
         for i in range(umap_features.shape[0]):
             hsv = colorsys.rgb_to_hsv(*umap_features[i])
             hsv = (hsv[0], 0.9, 0.9)
             umap_features[i] = colorsys.hsv_to_rgb(*hsv)
-
     # Create 1x2 subplots
     fig, axs = plt.subplots(1, 2, figsize=(10, 5))
 

@@ -17,6 +17,7 @@ def get_cropped(image, crop_size=896):
     print(f'width_pad: {width_pad}, height_pad: {height_pad}')
     print(f'width: {width}, height: {height}')
     print(f'rows: {rows}, cols: {cols}')
+    print(f'rows pad: {rows-height//crop_size}, cols pad: {cols-width//crop_size}')
     patches = []
     for i in range(0, height, crop_size):
         for j in range(0, width, crop_size):
@@ -33,7 +34,7 @@ def get_cropped(image, crop_size=896):
 
     return patches, width_pad, height_pad, rows, cols
 
-def get_overlapping(image, crop_size=448):
+def get_overlapping(image, crop_size=448, stride=2):
     """crops image into crop_size by crop_size dimensions
     crop size must be divisible by patch size (14 for dinov2)"""
     width, height = image.size
@@ -41,20 +42,24 @@ def get_overlapping(image, crop_size=448):
     padding_size_bottom = crop_size - (height % crop_size) if height % crop_size != 0 else 0
     image = ImageOps.expand(image, border=(0, 0, padding_size_right, padding_size_bottom), fill='black')
     width_pad, height_pad = image.size
-    rows = height_pad // crop_size*2
-    cols = width_pad // crop_size*2
+    rows = height_pad // crop_size*stride
+    cols = width_pad // crop_size*stride
     print(f'width_pad: {width_pad}, height_pad: {height_pad}')
     print(f'width: {width}, height: {height}')
     print(f'rows: {rows}, cols: {cols}')
+    print(f'rows pad: {rows-(height//crop_size*stride)}, cols pad: {cols-(width//crop_size*stride)}')
+    rows_pad = rows-height_pad // crop_size*stride
+    cols_pad = cols-width_pad // crop_size*stride
     patches = []
-    for i in range(0, height_pad, crop_size//2):
-        for j in range(0, width_pad, crop_size//2):
+    for i in range(0, height_pad, crop_size//stride):
+        for j in range(0, width_pad, crop_size//stride):
             try:
                 patch = F.crop(image, i, j, crop_size, crop_size)
             except:
+                print(f'Error at i: {i}, j: {j}')
                 continue
             assert (patch.size == (crop_size, crop_size))
 
             patches.append(patch)
 
-    return patches, width_pad, height_pad, rows, cols
+    return patches, width_pad, height_pad, rows, cols, rows_pad, cols_pad

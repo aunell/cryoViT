@@ -11,16 +11,16 @@
 
 module load python
 
-base_output_dir="/pasteur/u/aunell/cryoViT/ablation0515"
+base_output_dir="/pasteur/u/aunell/cryoViT/ablation0517"
 image_path="/pasteur/u/aunell/cryoViT/data/sample_data/original/image_test_L25_001_16.png"
 
-for crop_size in 224 448 896
+for crop_size in 448
 do
-    for dimensionality in UMAP Both
+    for dimensionality in Both
     do
-        for backbone in dinov2_vitg14_reg dinov2_vitl14_reg dinov2_vitb14_reg dinov2_vits14_reg
+        for backbone in dinov2_vitg14_reg 
         do
-            for include_hsv in True False
+            for include_hsv in False
             do
                 output_dir="${base_output_dir}/backbone_${backbone}/crop_${crop_size}/_dim_${dimensionality}_hsv_${include_hsv}"
                 mkdir -p $output_dir

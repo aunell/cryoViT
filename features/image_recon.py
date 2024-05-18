@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+from tqdm import tqdm
 
 def recon_patch(patches, cols, rows, patch_h, patch_w, feat_dim, total_features):
     all_rows=[]
@@ -14,24 +15,25 @@ def recon_patch(patches, cols, rows, patch_h, patch_w, feat_dim, total_features)
     assert(concatenated_array.shape == (patch_h*rows, patch_w*cols, feat_dim))
     return concatenated_array
 
-def recon_overlap(patches, cols, rows, patch_h, patch_w, feat_dim, total_features):
+def recon_overlap(patches, cols, rows, patch_h, patch_w, feat_dim, total_features,rows_pad, cols_pad, stride=2):
     all_rows=[]
-    neighbors = find_neighbors(rows, cols) #([168, 32, 32, 1536]), 14
-    for j in range(0,len(patches), cols*2):
+    neighbors = find_neighbors(rows-rows_pad, cols-cols_pad) #([168, 32, 32, 1536]), 14
+    for j in tqdm(range(0,len(patches), cols*stride)):
         concatenated_arrays = []
         for i in range(cols):
-            if i%2!=0:
-                continue
             total_features_ji = total_features[j+i].cpu()
-            total_features_ji = blend_features(total_features_ji, j+i, neighbors, total_features)
+            print("Before blend_features: ", total_features_ji)
+            total_features_ji = blend_features(total_features_ji, j+i, neighbors, total_features, stride)
+            total_features[j+i] = total_features_ji
+            print("After blend_features: ", total_features_ji)
+            if i%stride!=0:
+                continue
             concatenated_arrays.append(total_features_ji)
         concatenated_array = torch.cat(concatenated_arrays, dim=1)
         all_rows.append(concatenated_array)
     concatenated_array = torch.cat(all_rows, dim=0)
-    rows_reduced = rows  // 2
-    cols_reduced = cols  // 2
-    print(concatenated_array.shape)
-    print(patch_h*rows_reduced, patch_w*cols_reduced, feat_dim)
+    rows_reduced = rows  // stride
+    cols_reduced = cols  // stride
     assert(concatenated_array.shape == (patch_h*rows_reduced, patch_w*cols_reduced, feat_dim))
     return concatenated_array
 
@@ -40,8 +42,8 @@ def find_neighbors(rows, cols):
     neighbors_lower = {}
     neighbors_left= {}
     neighbors_right = {}
-    for i in range(0, rows):
-        for j in range(cols):
+    for i in range(0, rows-1):
+        for j in range(cols-1):
             index = i*cols + j
 
             # Check if there is a patch above
@@ -59,7 +61,7 @@ def find_neighbors(rows, cols):
 
     return [neighbors_upper, neighbors_lower, neighbors_left, neighbors_right]
 
-def blend_features(features_ji, index, neighbors, total_features):
+def blend_features(features_ji, index, neighbors, total_features, stride=2):
     blended_features = features_ji
     neighbors_upper, neighbors_lower, neighbors_left, neighbors_right = neighbors
     neighbors_upper = neighbors_upper.get(index, None)
@@ -68,60 +70,57 @@ def blend_features(features_ji, index, neighbors, total_features):
     neighbors_right = neighbors_right.get(index, None)
     # print(blended_features.shape) #torch.Size([32, 32, 1536])
     if neighbors_upper is not None:
-        blended_features= blend_upper_neighbor(blended_features, total_features[neighbors_upper])
+        blended_features= blend_upper_neighbor(blended_features, total_features[neighbors_upper], stride)
+        assert(blended_features.shape == features_ji.shape)
     if neighbors_lower is not None:
-        blended_features= blend_lower_neighbor(blended_features, total_features[neighbors_lower])
+        blended_features= blend_lower_neighbor(blended_features, total_features[neighbors_lower], stride)
+        assert(blended_features.shape == features_ji.shape)
     if neighbors_left is not None:
-        blended_features= blend_left_neighbor(blended_features, total_features[neighbors_left])
+        blended_features= blend_left_neighbor(blended_features, total_features[neighbors_left], stride)
+        assert(blended_features.shape == features_ji.shape)
     if neighbors_right is not None:
-        blended_features= blend_right_neighbor(blended_features, total_features[neighbors_right])
+        blended_features= blend_right_neighbor(blended_features, total_features[neighbors_right], stride)
+        assert(blended_features.shape == features_ji.shape)
     return blended_features
 
 ##B IS THE NEIGHBOR, A IS ORIGINAL
-def blend_upper_neighbor(top, bottom):
-    half_val = top.shape[0] // 2
-    top_half_A = top[:half_val, :, :]
-    bottom_half_A = top[half_val:, :, :]
+def blend_upper_neighbor(top, bottom,stride):
+    half_val = top.shape[0] // stride
+    top_half_A = top[:-half_val, :, :]
+    bottom_half_A = top[-half_val:, :, :]
     bottom_half_B = bottom[half_val:, :, :]
 
-    average_top_half = np.mean([top_half_A, bottom_half_B], axis=0)
+    average_top_half = top_half_A +  bottom_half_B / 2
 
-    new_array = np.concatenate([average_top_half, bottom_half_A], axis=0)
-    return_val = torch.from_numpy(new_array)
-    return return_val
+    new_array = torch.cat([average_top_half, bottom_half_A], axis=0)
+    return new_array
 
-def blend_lower_neighbor(top, bottom):
-    half_val = top.shape[0] // 2
+def blend_lower_neighbor(top, bottom, stride):
+    half_val = top.shape[0] // stride
     top_half_A = top[:half_val, :, :]
     bottom_half_A = top[half_val:, :, :]
-    top_half_B = bottom[half_val:, :, :]
+    top_half_B = bottom[:-half_val, :, :]
+    average_bottom_half = (bottom_half_A +  top_half_B) / 2
+    new_array = torch.cat([top_half_A, average_bottom_half], axis=0)
+    return new_array
 
-    average_bottom_half = np.mean([bottom_half_A, top_half_B], axis=0)
-
-    new_array = np.concatenate([top_half_A, average_bottom_half], axis=0)
-    return_val = torch.from_numpy(new_array)
-    return return_val
-
-def blend_left_neighbor(left, right):
-    half_val = left.shape[1] // 2
-    left_half_A = left[:, :half_val, :]
-    right_half_A = left[:, half_val:, :]
+def blend_left_neighbor(left, right, stride):
+    half_val = left.shape[1] // stride
+    left_half_A = left[:, :-half_val, :]
+    right_half_A = left[:, -half_val:, :]
     right_half_B = right[:, half_val:, :]
 
-    average_left_half = np.mean([left_half_A, right_half_B], axis=0)
+    average_left_half = (left_half_A + right_half_B) / 2
 
-    new_array = np.concatenate([average_left_half, right_half_A], axis=1)
-    return_val = torch.from_numpy(new_array)
-    return return_val
+    new_array = torch.cat([average_left_half, right_half_A], axis=1)
+    return new_array
 
-def blend_right_neighbor(left, right):
-    half_val = left.shape[1] // 2
+def blend_right_neighbor(left, right, stride):
+    half_val = left.shape[1] // stride
     left_half_A = left[:, :half_val, :]
     right_half_A = left[:, half_val:, :]
-    left_half_B = right[:, :half_val, :]
-    print(right_half_A.shape, left_half_B.shape)
-    average_right_half = np.mean([right_half_A, left_half_B], axis=0)
+    left_half_B = right[:, :-half_val, :]
+    average_right_half = (right_half_A + left_half_B) / 2
 
-    new_array = np.concatenate([left_half_A, average_right_half], axis=1)
-    return_val = torch.from_numpy(new_array)
+    return_val = torch.cat([left_half_A, average_right_half], axis=1)
     return return_val

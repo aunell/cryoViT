@@ -6,12 +6,19 @@ from PIL import Image
 from torchvision import transforms
 import numpy as np
 import os
+def set_seed(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(seed)
 
 # torch.hub.set_dir('/pasteur/u/aunell/dino')
 def load_model(backbone='dinov2_vitg14_reg', crop_size=896):
     """Loads a model from the Facebook Research DINO repository.
     crop_size must be divisible by patch size (14 for dinov2)
     """
+    set_seed(0) 
     model_path = f'/pasteur/u/aunell/cryoViT/model/{backbone}.pth'
     if os.path.exists(model_path):
         print("Model file exists.")
@@ -40,6 +47,7 @@ def load_model(backbone='dinov2_vitg14_reg', crop_size=896):
 def return_features(patches, model):
   """
   Returns features from an image using a ViT."""
+  set_seed(0) 
   total_features  = []
   transform = transforms.Compose([              
                                 transforms.ToTensor(),                    
@@ -60,6 +68,7 @@ def return_features(patches, model):
 def return_features_overlapped(patches, model, cols, rows):
     """
     Returns features from an image using a ViT."""
+    set_seed(0) 
     total_features  = []
     transform = transforms.Compose([              
                                     transforms.ToTensor(),                    
