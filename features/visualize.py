@@ -22,6 +22,10 @@ def plot_umap(umap_features, ground_truth, patch_h, patch_w, width_pad, height_p
 
     row_padding = (height_pad-height)//14
     col_padding = (width_pad-width)//14
+    print(umap_features.shape)
+    print(patch_h, patch_w, 3)
+    patch_h-=8
+    patch_w-=8
     umap_features = umap_features.reshape(patch_h,patch_w, 3)
     print(row_padding, col_padding)
     if row_padding != 0:

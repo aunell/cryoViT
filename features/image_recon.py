@@ -15,6 +15,27 @@ def recon_patch(patches, cols, rows, patch_h, patch_w, feat_dim, total_features)
     assert(concatenated_array.shape == (patch_h*rows, patch_w*cols, feat_dim))
     return concatenated_array
 
+def recon_overlap_center(patches, cols, rows, patch_h, patch_w, feat_dim, total_features):
+    all_rows=[]
+    for j in range(0,len(patches), cols):
+        concatenated_arrays = []
+        for i in range(cols):
+            total_features_ji = total_features[j+i].cpu()
+            if i==cols-1 and j==len(patches)-cols:
+                total_features_ji = total_features_ji[patch_h//4:2*patch_h//4, patch_w//4:2*patch_w//4, :]
+            elif i==cols-1:
+                total_features_ji = total_features_ji[patch_h//4:3*patch_h//4, patch_w//4:2*patch_w//4, :]
+            elif j==len(patches)-cols:
+                 total_features_ji = total_features_ji[patch_h//4:2*patch_h//4, patch_w//4:3*patch_w//4, :]
+            else:
+                total_features_ji = total_features_ji[patch_h//4:3*patch_h//4, patch_w//4:3*patch_w//4, :]
+            concatenated_arrays.append(total_features_ji)
+            print("total_features_ji shape: ", total_features_ji.shape)
+        concatenated_array = torch.cat(concatenated_arrays, dim=1)
+        all_rows.append(concatenated_array)
+    concatenated_array = torch.cat(all_rows, dim=0)
+    return concatenated_array
+
 def recon_overlap(patches, cols, rows, patch_h, patch_w, feat_dim, total_features,rows_pad, cols_pad, stride=2):
     all_rows=[]
     neighbors = find_neighbors(rows-rows_pad, cols-cols_pad) #([168, 32, 32, 1536]), 14

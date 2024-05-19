@@ -47,7 +47,6 @@ def load_model(backbone='dinov2_vitg14_reg', crop_size=896):
 def return_features(patches, model):
   """
   Returns features from an image using a ViT."""
-  set_seed(0) 
   total_features  = []
   transform = transforms.Compose([              
                                 transforms.ToTensor(),                    
