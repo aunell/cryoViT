@@ -38,7 +38,8 @@ def recon_overlap_center(patches, cols, rows, patch_h, patch_w, feat_dim, total_
 
 def recon_overlap_center_modified(patches, cols, rows, patch_h, patch_w, feat_dim, total_features, ratio=2):
     all_rows=[]
-    for j in range(0,len(patches), cols):
+    # for j in range(0,len(patches), cols):
+    for j in range(0,rows*cols, cols):
         concatenated_arrays = []
         for i in range(cols):
             total_features_ji = total_features[j+i].cpu()

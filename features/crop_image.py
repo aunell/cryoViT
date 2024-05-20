@@ -69,26 +69,26 @@ def get_overlapping_center(image, crop_size=448, stride=2):
     stride is ratio of center patch that is kept to crop size ie stride of 2 means we are keeping a 224 x 224 patch (224/14 x 224/14)"""
     width, height = image.size
     inner_crop_dimension = crop_size//stride
-    center_image_half_size=inner_crop_dimension//14//2
-    width+=center_image_half_size*2
-    height+=center_image_half_size*2
+    center_image_padding=(crop_size-inner_crop_dimension)//2
+    width+=center_image_padding*2
+    height+=center_image_padding*2
     padding_size_right = crop_size - (width % crop_size) if width % crop_size != 0 else 0
     padding_size_bottom = crop_size - (height % crop_size) if height % crop_size != 0 else 0
-    image = ImageOps.expand(image, border=(center_image_half_size, center_image_half_size, padding_size_right+center_image_half_size, padding_size_bottom+center_image_half_size), fill='black')
+    image = ImageOps.expand(image, border=(center_image_padding, center_image_padding, padding_size_right+center_image_padding, padding_size_bottom+center_image_padding), fill='black')
     width_pad, height_pad = image.size
     rows = height_pad // crop_size*stride
     cols = width_pad // crop_size*stride
     rows_pad = rows-height_pad // crop_size*stride
     cols_pad = cols-width_pad // crop_size*stride
-    patches = []
+    crops = []
     print(inner_crop_dimension)
     for i in range(0, height_pad, inner_crop_dimension):
         for j in range(0, width_pad, inner_crop_dimension):
-            patch = F.crop(image, i, j, crop_size, crop_size)
-            assert (patch.size == (crop_size, crop_size))
+            cropped_section = F.crop(image, i, j, crop_size, crop_size)
+            assert (cropped_section.size == (crop_size, crop_size))
 
-            patches.append(patch)
-    print(len(patches))
-    print(rows, cols)
-    assert(len(patches)==rows*cols)
-    return patches, width_pad, height_pad, rows, cols, rows_pad, cols_pad
+            crops.append(cropped_section)
+    print(f'rows: {rows}, cols: {cols}')
+    print(len(crops))
+    assert(len(crops)==rows*cols)
+    return crops, width_pad, height_pad, rows, cols, rows_pad, cols_pad

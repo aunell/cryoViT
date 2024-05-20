@@ -11,7 +11,7 @@
 
 module load python
 
-base_output_dir="/pasteur/u/aunell/cryoViT/ablation0517"
+base_output_dir="/pasteur/u/aunell/cryoViT/ablation0518"
 image_path="/pasteur/u/aunell/cryoViT/data/sample_data/original/image_test_L25_001_16.png"
 
 for crop_size in 448

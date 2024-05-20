@@ -59,7 +59,7 @@ def return_features(patches, model):
         img_t = transform(img).cuda()
         features_dict = model.forward_features(img_t.unsqueeze(0))
         features = features_dict['x_norm_patchtokens']
-        total_features.append(features)
+        total_features.append(features.cpu())
   total_features = torch.cat(total_features, dim=0) #expected torch.Size([1, 21904, 1536])
   assert(total_features.size()[0] == len(patches))
   return total_features 
