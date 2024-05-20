@@ -6,7 +6,7 @@ from cryoViT.features.load_model import return_features, load_model
 from cryoViT.features.crop_image import get_cropped, get_overlapping, get_overlapping_center
 from cryoViT.features.dimensionality import find_pca, find_umap
 from cryoViT.features.visualize import plot_umap
-from cryoViT.features.image_recon import recon_patch, recon_overlap, recon_overlap_center
+from cryoViT.features.image_recon import recon_patch, recon_overlap, recon_overlap_center_modified
 import argparse
 import torch
 import numpy as np
@@ -35,24 +35,28 @@ def main():
     set_seed(0)  # or any other number
     img= Image.open(args.image).convert('RGB')
     width, height = img.size   
-    stride=2
+    ratio=8 #args.crop_size//14//4
     print('image size', width, height)
     # patches, width_pad, height_pad, rows, cols = get_cropped(img, crop_size=args.crop_size)
-    patches, width_pad, height_pad, rows, cols, rows_pad, cols_pad = get_overlapping(img, crop_size=args.crop_size, stride=stride)
-    # patches, width_pad, height_pad, rows, cols= get_overlapping_center(img, crop_size=args.crop_size)
+    # patches, width_pad, height_pad, rows, cols, rows_pad, cols_pad = get_overlapping(img, crop_size=args.crop_size, stride=stride)
+    patches, width_pad, height_pad, rows, cols, rows_pad, cols_pad= get_overlapping_center(img, crop_size=args.crop_size, stride=ratio)
     dinov2, feat_dim, patch_h, patch_w = load_model(backbone=args.backbone, crop_size=args.crop_size)
-    # total_features = return_features(patches, dinov2)  #returns patch_len, crop/14xcrop/14, feat_dim, overlaps every crop//2
-    # total_features = total_features.reshape(rows*cols, patch_h, patch_w, feat_dim).cpu()
-    # torch.save(total_features, '/pasteur/u/aunell/cryoViT/features/features_0518.pt')
-    total_features = torch.load('/pasteur/u/aunell/cryoViT/features/features_0518.pt')
+    print('model loaded')
+    total_features = return_features(patches, dinov2)  #returns patch_len, crop/14xcrop/14, feat_dim, overlaps every crop//2
+    print('total features loaded') #([168, 32, 32, 1536]) for overlap, [42, 32, 32, 1536]) for regular
+    total_features = total_features.reshape(rows*cols, patch_h, patch_w, feat_dim).cpu()
+    # torch.save(total_features, '/pasteur/u/aunell/cryoViT/features/features_0518_896.pt')
+    # total_features = torch.load('/pasteur/u/aunell/cryoViT/features/features_0518.pt')
     print('total_features shape', total_features.shape) #([168, 32, 32, 1536]) for overlap, [42, 32, 32, 1536]) for regular
     # concatenated_array = recon_patch(patches, cols, rows, patch_h, patch_w, feat_dim, total_features)
-    concatenated_array = recon_overlap_center(patches, cols, rows, patch_h, patch_w, feat_dim, total_features)
+    concatenated_array = recon_overlap_center_modified(patches, cols, rows, patch_h, patch_w, feat_dim, total_features, ratio=ratio)
     # concatenated_array = recon_overlap(patches, cols, rows, patch_h, patch_w, feat_dim, total_features, rows_pad, cols_pad, stride=stride)
     print('concat array shape', concatenated_array.shape) #448, 384, 1536 ([224, 192, 1536]) for crop
     # rows, cols = rows//stride, cols//stride
-    patch_h, patch_w = patch_h//stride, patch_w//stride
-    # assert(concatenated_array.shape == (rows*patch_h, cols*patch_w, feat_dim))
+    patch_h, patch_w = patch_h//ratio, patch_w//ratio
+    print('patch_h, patch_w', patch_h, patch_w)
+    print('rows, cols', rows, cols)
+    assert(concatenated_array.shape == (rows*patch_h, cols*patch_w, feat_dim))
     # total_features_j = concatenated_array.reshape(patch_h * patch_w*rows*cols, feat_dim)
     total_features_j = concatenated_array.reshape(-1, feat_dim)
 
@@ -62,7 +66,7 @@ def main():
     if args.dimensionality!= 'PCA':
          total_features_j = find_umap(total_features_j, n_components=3)
     # assert(total_features_j.shape == (patch_h * patch_w*cols*rows, 3))
-    plot_umap(total_features_j, img, patch_h*rows, patch_w*cols, width_pad, height_pad, width, height, output_dir=f"{args.output_dir}/UMAP_TEST.png", include_hsv=args.include_hsv)
+    plot_umap(total_features_j, img, rows*patch_h, cols*patch_w, width_pad, height_pad, width, height, output_dir=f"{args.output_dir}/UMAP_TEST_2.png", include_hsv=args.include_hsv, crop_size=args.crop_size)
 
 if __name__ == "__main__":
     main()

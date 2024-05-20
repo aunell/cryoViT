@@ -9,7 +9,7 @@ def set_seed(seed):
     torch.backends.cudnn.benchmark = False
     np.random.seed(seed)
 def plot_umap(umap_features, ground_truth, patch_h, patch_w, width_pad, height_pad,
-              width, height, output_dir=None, include_hsv="True"):
+              width, height, output_dir=None, include_hsv="True", crop_size=448):
     # Convert RGB to HSV, adjust saturation and value, then convert back to RGB
     set_seed(0)
     if include_hsv=="True":
@@ -24,8 +24,10 @@ def plot_umap(umap_features, ground_truth, patch_h, patch_w, width_pad, height_p
     col_padding = (width_pad-width)//14
     print(umap_features.shape)
     print(patch_h, patch_w, 3)
-    patch_h-=8
-    patch_w-=8
+    # patch_h-=(crop_size//14)//4
+    # patch_w-=(crop_size//14)//4
+    # patch_h-=((crop_size+crop_size//2)//14)//4
+    # patch_w-=((crop_size+crop_size//2)//14)//4
     umap_features = umap_features.reshape(patch_h,patch_w, 3)
     print(row_padding, col_padding)
     if row_padding != 0:
