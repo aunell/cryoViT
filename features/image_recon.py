@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 from tqdm import tqdm
+import torch.nn.functional as F
 
 def recon_patch(patches, cols, rows, patch_h, patch_w, feat_dim, total_features):
     all_rows=[]
@@ -36,25 +37,16 @@ def recon_overlap_center(patches, cols, rows, patch_h, patch_w, feat_dim, total_
     concatenated_array = torch.cat(all_rows, dim=0)
     return concatenated_array
 
-def recon_overlap_center_modified(patches, cols, rows, patch_h, patch_w, feat_dim, total_features, ratio=2):
+def recon_overlap_center_modified(cols, rows, patch_dim, total_features, ratio):
     all_rows=[]
-    # for j in range(0,len(patches), cols):
     for j in range(0,rows*cols, cols):
         concatenated_arrays = []
         for i in range(cols):
             total_features_ji = total_features[j+i].cpu()
-            center_point=patch_h//2
-            left_bound=center_point-patch_h//(2*ratio)
-            right_bound=center_point+patch_h//(2*ratio)
+            center_point=patch_dim//2
+            left_bound=center_point-patch_dim//(2*ratio)
+            right_bound=center_point+patch_dim//(2*ratio)
             total_features_ji = total_features_ji[left_bound:right_bound, left_bound:right_bound, :]
-            # if i==cols-1 and j==len(patches)-cols:
-            #     total_features_ji = total_features_ji[left_bound:right_bound-right_bound//2, left_bound:right_bound-right_bound//2, :]
-            # elif i==cols-1:
-            #     total_features_ji = total_features_ji[left_bound:right_bound, left_bound:right_bound-right_bound//2, :]
-            # elif j==len(patches)-cols:
-            #      total_features_ji = total_features_ji[left_bound:right_bound-right_bound//2, left_bound:right_bound, :]
-            # else:
-            #     total_features_ji = total_features_ji[left_bound:right_bound, left_bound:right_bound, :]
             concatenated_arrays.append(total_features_ji)
         concatenated_array = torch.cat(concatenated_arrays, dim=1)
         all_rows.append(concatenated_array)

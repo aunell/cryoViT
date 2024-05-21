@@ -6,6 +6,8 @@ from PIL import Image
 from torchvision import transforms
 import numpy as np
 import os
+import torch.nn.functional as F
+
 def set_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -14,20 +16,12 @@ def set_seed(seed):
     np.random.seed(seed)
 
 # torch.hub.set_dir('/pasteur/u/aunell/dino')
-def load_model(backbone='dinov2_vitg14_reg', crop_size=896):
+def load_model(backbone, crop_size):
     """Loads a model from the Facebook Research DINO repository.
     crop_size must be divisible by patch size (14 for dinov2)
     """
     set_seed(0) 
-    model_path = f'/pasteur/u/aunell/cryoViT/model/{backbone}.pth'
-    if os.path.exists(model_path):
-        print("Model file exists.")
-        dinov2 = torch.hub.load('facebookresearch/dinov2', backbone).cuda()
-        dinov2.load_state_dict(torch.load(model_path))
-    else:
-        dinov2 = torch.hub.load('facebookresearch/dinov2', backbone).cuda()
-        # Save the model to disk
-        torch.save(dinov2.state_dict(), model_path)
+    dinov2 = torch.hub.load('facebookresearch/dinov2', backbone).cuda()
     patch_size = dinov2.patch_size  # patchsize=14
     patch_h = crop_size // patch_size
     patch_w = crop_size // patch_size
@@ -44,7 +38,7 @@ def load_model(backbone='dinov2_vitg14_reg', crop_size=896):
         raise ValueError('backbone not supported')
     return dinov2, feat_dim, patch_h, patch_w
 
-def return_features(patches, model):
+def return_features(crops, model):
   """
   Returns features from an image using a ViT."""
   total_features  = []
@@ -54,12 +48,13 @@ def return_features(patches, model):
                                 mean=[0.485, 0.456, 0.406],                
                                 std=[0.229, 0.224, 0.225]              
                                 )])
-  for i, img in enumerate(patches):
+  for i, img in enumerate(crops):
     with torch.no_grad():
         img_t = transform(img).cuda()
         features_dict = model.forward_features(img_t.unsqueeze(0))
         features = features_dict['x_norm_patchtokens']
-        total_features.append(features.cpu())
-  total_features = torch.cat(total_features, dim=0) #expected torch.Size([1, 21904, 1536])
-  assert(total_features.size()[0] == len(patches))
+        feature_pre = features_dict['x_prenorm'][:, -features.shape[1]:, :]
+        total_features.append(feature_pre.cpu())
+  total_features = torch.cat(total_features, dim=0) 
+  assert(total_features.size()[0] == len(crops))
   return total_features 
