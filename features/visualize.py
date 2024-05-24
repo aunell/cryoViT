@@ -2,37 +2,43 @@ import colorsys
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-def set_seed(seed):
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-    np.random.seed(seed)
-def plot_umap(umap_features, ground_truth, patch_h, patch_w, col_padding, row_padding, 
-              output_dir=None, include_hsv="True"):
+from PIL import Image, ImageFilter
+from PIL.ImageEnhance import Color
+
+def plot_umap(umap_features, ground_truth, patch_h, patch_w, output_dir=None, include_hsv="True"):
     # Convert RGB to HSV, adjust saturation and value, then convert back to RGB
-    set_seed(0)
     if include_hsv=="True":
         for i in range(umap_features.shape[0]):
             hsv = colorsys.rgb_to_hsv(*umap_features[i])
             hsv = (hsv[0], 0.9, 0.9)
             umap_features[i] = colorsys.hsv_to_rgb(*hsv)
-    # Create 1x2 subplots
-    fig, axs = plt.subplots(1, 2, figsize=(10, 5))
-    print(umap_features.shape)
-    print(patch_h, patch_w, 3)
     umap_features = umap_features.reshape(patch_h,patch_w, 3)
-    print(row_padding, col_padding)
-    if row_padding != 0:
-        umap_features = umap_features[:-row_padding, :, :]
-    if col_padding != 0:
-        umap_features = umap_features[:, :-col_padding, :]
-    axs[0].imshow(umap_features)
-    axs[0].set_title('UMAP Processed')
+    vec_img = color_features(umap_features)
 
-    # Plot ground truth
-    axs[1].imshow(ground_truth)
-    axs[1].set_title('Ground Truth Total')
+    img = Image.new("RGB", (vec_img.width + ground_truth.width, vec_img.height))
+    img.paste(vec_img, (0, 0))
+    img.paste(ground_truth, (vec_img.width, 0))
+    img.save(output_dir)
 
-    plt.savefig(output_dir)
-    plt.show()
+def color_features(features) -> Image:
+    # per channel normalization and outlier clipping
+    features = features - features.mean((0, 1), keepdims=True)
+    std = features.std((0, 1), keepdims=True)
+    features = features.clip(-2 * std, 2 * std)
+
+    # min max scaling to generate valid RGB tuples
+    features = features - features.min((0, 1), keepdims=True)
+    features = features / features.max((0, 1), keepdims=True)
+    features = (255 * features).astype(np.uint8)
+    torch.save(features, f'/pasteur/u/aunell/cryoViT/classifier/UMAP_features_7.pt')
+    img = Image.fromarray(features)
+    converter = Color(img)
+    img = converter.enhance(1.25)  # boost saturation
+    # img = img.filter(ImageFilter.MedianFilter)  # optional for reducing speckles
+    img = img.resize(
+        (img.width * 14, img.height * 14),
+        resample=Image.NEAREST,
+    ) 
+
+    # img.save('/pasteur/u/aunell/cryoViT/features/UMAP_features.png')
+    return img

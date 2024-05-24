@@ -1,1 +1,8 @@
 data/sample_data/*
+*.png
+*.pt
+features/__pycache__/*
+data/__pycache__/*
+ablation0524/*
+__pycache__/*
+dinov2/*

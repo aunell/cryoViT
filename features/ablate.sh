@@ -11,21 +11,17 @@
 
 module load python
 
-base_output_dir="/pasteur/u/aunell/cryoViT/ablation0518"
-image_path="/pasteur/u/aunell/cryoViT/data/sample_data/original/image_test_L25_001_16.png"
+base_output_dir="/pasteur/u/aunell/cryoViT/ablation0524"
 
-for crop_size in 448
+for i in {1..7}
 do
-    for dimensionality in Both
+    image_path="/pasteur/u/aunell/cryoViT/data/sample_data/original/image_test_L25_00${i}_16.png"
+
+    for backbone in dinov2_vitg14_reg
     do
-        for backbone in dinov2_vitg14_reg 
-        do
-            for include_hsv in False
-            do
-                output_dir="${base_output_dir}/backbone_${backbone}/crop_${crop_size}/_dim_${dimensionality}_hsv_${include_hsv}"
-                mkdir -p $output_dir
-                python /pasteur/u/aunell/cryoViT/features/main.py --output_dir $output_dir --image $image_path --crop_size $crop_size --dimensionality $dimensionality --backbone $backbone --include_hsv $include_hsv &> ${output_dir}/log.txt
-            done
-        done
+        output_dir="${base_output_dir}/backbone_${backbone}"
+        mkdir -p $output_dir
+        image_dir="${output_dir}/image_${i}.png"
+        python /pasteur/u/aunell/cryoViT/features/main.py --output_dir $image_dir --image $image_path --backbone $backbone &> ${output_dir}/log_${i}.txt
     done
 done

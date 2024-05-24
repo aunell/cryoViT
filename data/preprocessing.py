@@ -48,6 +48,7 @@ def crop_white_box(image_path):
       A new image object with the white box cropped.
   """
   img = load_image(image_path)
+  img_id =image_path.split('/')[-1].split('.')[0]
   img_array = np.array(img)
   for index, row in enumerate(reversed(img_array)):
     if np.mean(row[row != 0]) < 254:
@@ -55,7 +56,7 @@ def crop_white_box(image_path):
         print(bottom_index) #bottom_index is 310
         break
   cropped_img = img.crop((0, 0, img.width, img.height - bottom_index))
-  cropped_img.save('/pasteur/u/aunell/cryoViT/data/image_test_0.png')
+  cropped_img.save(f'/pasteur/u/aunell/cryoViT/data/sample_data/original/image_test_{img_id}.png')
   return cropped_img
 
 
@@ -67,7 +68,7 @@ def draw_line_on_image(image, coordinates):
 
     return image
 
-def draw_circle_on_image(image, center, radius):
+def draw_circle_on_image(image, center, radius, color="white"):
     draw = ImageDraw.Draw(image)
     left = center[0] - radius
     top = center[1] - radius
@@ -75,7 +76,7 @@ def draw_circle_on_image(image, center, radius):
     bottom = center[1] + radius
 
     # Draw the circle
-    draw.ellipse([(left, top), (right, bottom)], outline="white", width=5)
+    draw.ellipse([(left, top), (right, bottom)], outline=color, width=10)
 
     return image
 
@@ -107,8 +108,8 @@ def create_annotations(input_dir, output_dir):
                     print(text[key])
 
         # Save the processed image with a new name
-        output_path = os.path.join(output, os.path.splitext(files[i])[0] + '.png')
-        image.save(output_path)
+        # output_path = os.path.join(output, os.path.splitext(files[i])[0] + '.png')
+        # image.save(output_path)
 
 directory = '/pasteur/u/aunell/cryoViT/data/sample_data/l25/'
 output = '/pasteur/u/aunell/cryoViT/data/sample_data/processed/'
