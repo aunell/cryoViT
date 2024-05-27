@@ -76,9 +76,48 @@ def draw_circle_on_image(image, center, radius, color="white"):
     bottom = center[1] + radius
 
     # Draw the circle
-    draw.ellipse([(left, top), (right, bottom)], outline=color, width=10)
+    draw.ellipse([(left, top), (right, bottom)], outline=color, fill=color, width=1)
 
     return image
+
+def draw_square_on_image(image, center, side_length, color="white"):
+    draw = ImageDraw.Draw(image)
+    left = center[0] - side_length // 2
+    top = center[1] - side_length // 2
+    right = center[0] + side_length // 2
+    bottom = center[1] + side_length // 2
+
+    # Draw the square
+    draw.rectangle([(left, top), (right, bottom)], outline=color, fill=color)
+
+    return image
+
+def create_trust_region(labelled_vesicles, padding=5):
+    # Unzip the list of points into two lists for x and y coordinates
+    x_coords, y_coords = zip(*[coord for coord, _ in labelled_vesicles])
+    # Find the minimum and maximum x and y coordinates
+    min_x, max_x = min(x_coords), max(x_coords)
+    min_y, max_y = min(y_coords), max(y_coords)
+
+    # The corners of the bounding box are (min_x, min_y) and (max_x, max_y)
+    bounding_box = [(min_x-padding, min_y-padding), (max_x+padding, max_y+padding)]
+
+    return bounding_box
+
+def create_trust_region_coords(labelled_vesicles, padding=5):
+    # Unzip the list of points into two lists for x and y coordinates
+    coords = zip([coord for coord, _ in labelled_vesicles])
+    # Find the minimum and maximum x and y coordinates
+    coords_to_trust=[]
+    for coord in coords:
+        x, y = coord[0]
+        # x*=14
+        # y*=14
+        for i in range(x-padding, x+padding):
+            for j in range(y-padding, y+padding):
+                coords_to_trust.append((i,j))
+    # The corners of the bounding box are (min_x, min_y) and (max_x, max_y)
+    return coords_to_trust
 
 def create_annotations(input_dir, output_dir):
     # Get a list of all files in the directory

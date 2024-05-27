@@ -17,8 +17,8 @@ def main():
     parser = argparse.ArgumentParser(description="Process some integers.")
 
     # Add the arguments
-    parser.add_argument('--output_dir', type=str, default="/pasteur/u/aunell/cryoViT/features/image_7.png", help='The output directory')
-    parser.add_argument('--image', type=str, default="/pasteur/u/aunell/cryoViT/data/sample_data/original/image_test_L25_007_16.png", help='The image file path')
+    parser.add_argument('--output_dir', type=str, default="/pasteur/u/aunell/cryoViT/features/image_large_unnormalized.png", help='The output directory')
+    parser.add_argument('--image', type=str, default="/pasteur/u/aunell/cryoViT/data/sample_data/original/image_test_L25_001_16.png", help='The image file path')
     parser.add_argument('--crop_size', type=int, default=448, help='The crop size') #3 choices [224, 448, 896, 3010, 2800]
     parser.add_argument('--backbone', type=str, default='dinov2_vitg14_reg', help='The backbone model') #4 choices [dinov2_vitg14_reg, dinov2_vitl14_reg, dinov2_vitb14_reg, dinov2_vits14_reg]
     parser.add_argument('--include_hsv', type=str, default="False", help='Include HSV in the plot') #2 choices [True, False]
@@ -48,7 +48,7 @@ def main():
 
     cropped_features = extract_inner_crops(total_features, inner_crop_patch_dim, rows, cols, feat_dim)#([896, 8, 8, 384]) compute mean and std for each 8x8 region's individual patch
 
-    cropped_features = normalize_features(cropped_features)
+    # cropped_features = normalize_features(cropped_features)
     cropped_features = cropped_features.reshape(rows, cols, inner_crop_patch_dim, inner_crop_patch_dim, feat_dim)# (896,8,8,384) --> 32,28, 8, 8, 384
     assert(cropped_features.shape == (rows, cols, inner_crop_patch_dim, inner_crop_patch_dim, feat_dim)) 
     # print(rows,cols)
@@ -65,7 +65,7 @@ def main():
     cropped_features_flat = reduce_features(reformatted_features, feat_dim, n_components=feat_dim//3)
     assert(cropped_features_flat.shape == (h_final*w_final, 3))
     
-    plot_umap(cropped_features_flat, img, h_final, w_final, output_dir=args.output_dir, include_hsv=args.include_hsv)
+    plot_umap(cropped_features_flat, img, h_final, w_final, output_dir=args.output_dir, include_hsv=args.include_hsv, i=i)
 
 if __name__ == "__main__":
     main()

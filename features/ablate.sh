@@ -13,7 +13,7 @@ module load python
 
 base_output_dir="/pasteur/u/aunell/cryoViT/ablation0524"
 
-for i in {1..7}
+for i in {7..8}
 do
     image_path="/pasteur/u/aunell/cryoViT/data/sample_data/original/image_test_L25_00${i}_16.png"
 
