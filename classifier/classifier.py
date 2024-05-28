@@ -77,6 +77,7 @@ class MaskCreator:
             if avg_similarity < min_avg_similarity:
                 min_avg_similarity = avg_similarity
         # return potential_vesicles
+                
         def top_vesicle_choices(label_to_number: dict, percent_vesicles_selected: float, similarity_thresh) -> list:
             sorted_dict = sorted(label_to_number.items(), key=lambda item: item[1], reverse=True)
             top_entries_count = int(len(sorted_dict) * percent_vesicles_selected)
@@ -89,16 +90,20 @@ class MaskCreator:
     
     def create_mask_visual(self, img, unmarked_vesicle_locations: List[Tuple[Tuple[int], int]], vesicle_locations: list) -> Image:
         # img = Image.open('/pasteur/u/aunell/cryoViT/data/sample_data/original/image_test_L25_004_16.png').convert('RGB')
-        new_width = img.width // 14
-        new_height = img.height // 14
+        new_width = img.width #// 14
+        new_height = img.height #// 14
         img = img.resize((new_width, new_height))
         # img = Image.new('RGB', (new_width, new_height))
         coord_list_to_ignore=[]
-        trust_region_coords= create_trust_region_coords(vesicle_locations, padding=10)
+        trust_region_coords= create_trust_region_coords(vesicle_locations, padding=10*14)
         for coords, radius in unmarked_vesicle_locations:
+            coords = (coords[0]*14, coords[1]*14)
+            radius = radius*14
             result=self.create_coords_ignore(coords, radius*4, trust_region_coords)
             coord_list_to_ignore.extend(result)
         for center, radius in vesicle_locations:
+            center = (center[0]*14, center[1]*14)
+            radius = radius*14
             img = draw_circle_on_image(img, center, radius, color='white')
         for coords in coord_list_to_ignore:
             draw=ImageDraw.Draw(img)
@@ -107,20 +112,20 @@ class MaskCreator:
     
     def create_mask(self, img, unmarked_vesicle_locations: List[Tuple[Tuple[int], int]], vesicle_locations: list, output_dir) -> Image:
         # img = Image.open('/pasteur/u/aunell/cryoViT/data/sample_data/original/image_test_L25_004_16.png').convert('RGB')
-        new_width = img.width // 14
-        new_height = img.height // 14
+        new_width = img.width #// 14
+        new_height = img.height # // 14
         img = img.resize((new_width, new_height))
         img = Image.new('RGB', (new_width, new_height))
         coord_list_to_ignore=[]
-        trust_region_coords= create_trust_region_coords(vesicle_locations, padding=10)
+        trust_region_coords= create_trust_region_coords(vesicle_locations, padding=10*14)
         for coords, radius in unmarked_vesicle_locations:
-            coords = (coords[0], coords[1])
-            radius = radius
+            coords = (coords[0]*14, coords[1]*14)
+            radius = radius*14
             result=self.create_coords_ignore(coords, radius*4, trust_region_coords)
             coord_list_to_ignore.extend(result)
         for center, radius in vesicle_locations:
-            coords = (coords[0], coords[1])
-            radius = radius
+            center = (center[0]*14, center[1]*14)
+            radius = radius*14
             img = draw_circle_on_image(img, center, radius, color='white')
         with open(output_dir, 'wb') as f:
             pickle.dump(coord_list_to_ignore, f)
@@ -129,6 +134,7 @@ class MaskCreator:
     def create_coords_ignore(self, coords, radius, trust_region_coords):
         coord_list_to_ignore=[]
         y_coord, x_coord = coords
+        trust_region_coords = set(trust_region_coords)
         for i in range(x_coord-radius, x_coord+radius):
             for j in range(y_coord-radius, y_coord+radius):
                 if (i,j) not in trust_region_coords:

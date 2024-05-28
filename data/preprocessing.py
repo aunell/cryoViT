@@ -111,8 +111,8 @@ def create_trust_region_coords(labelled_vesicles, padding=5):
     coords_to_trust=[]
     for coord in coords:
         x, y = coord[0]
-        # x*=14
-        # y*=14
+        x*=14
+        y*=14
         for i in range(x-padding, x+padding):
             for j in range(y-padding, y+padding):
                 coords_to_trust.append((i,j))
