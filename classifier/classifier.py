@@ -116,13 +116,13 @@ class MaskCreator:
         new_height = img.height # // 14
         img = img.resize((new_width, new_height))
         img = Image.new('RGB', (new_width, new_height))
-        coord_list_to_ignore=[]
+        coord_list_to_ignore=set()
         trust_region_coords= create_trust_region_coords(vesicle_locations, padding=10*14)
         for coords, radius in unmarked_vesicle_locations:
             coords = (coords[0]*14, coords[1]*14)
             radius = radius*14
             result=self.create_coords_ignore(coords, radius*4, trust_region_coords)
-            coord_list_to_ignore.extend(result)
+            coord_list_to_ignore.update(result)
         for center, radius in vesicle_locations:
             center = (center[0]*14, center[1]*14)
             radius = radius*14
@@ -132,13 +132,13 @@ class MaskCreator:
         return img
     
     def create_coords_ignore(self, coords, radius, trust_region_coords):
-        coord_list_to_ignore=[]
+        coord_list_to_ignore=set()
         y_coord, x_coord = coords
         trust_region_coords = set(trust_region_coords)
         for i in range(x_coord-radius, x_coord+radius):
             for j in range(y_coord-radius, y_coord+radius):
                 if (i,j) not in trust_region_coords:
-                    coord_list_to_ignore.append((i,j))
+                    coord_list_to_ignore.add((i,j))
         return coord_list_to_ignore
     
 def visualize_images(mask, ground_truth, output_dir):
